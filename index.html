@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ASCII Donut 3D – DVD</title>
+  <style>
+    :root { color-scheme: dark; }
+    html, body { height: 100%; }
+    body{
+      margin:0;
+      background:#0b0b0b;
+      color:#00ff00; /* verde */
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      overflow:hidden;   /* sin scroll */
+      position:relative; /* referencia para translate() */
+    }
+    #screen{
+      position:absolute;   /* mover con transform */
+      top:0; left:0;       /* origen en esquina superior izquierda */
+      white-space:pre;
+      line-height:1.05;
+      user-select:none;
+      will-change:transform;
+      font-size: clamp(10px, 2.2vw, 18px); /* un poco más grande */
+      margin:0;
+    }
+  </style>
+</head>
+<body>
+  <pre id="screen" aria-label="Donut ASCII animado" role="img"></pre>
+
+  <script>
+  (() => {
+    // ===== Dimensiones del lienzo (caracteres) =====
+    let WIDTH = 90, HEIGHT = 28;
+    function fitToWindow() {
+      // estimación conservadora para que quepa con el font-size de arriba
+      const cols = Math.floor(window.innerWidth  / 12);
+      const rows = Math.floor(window.innerHeight / 22);
+      WIDTH  = Math.max(70, Math.min(110, cols));
+      HEIGHT = Math.max(24, Math.min(34,  rows));
+    }
+    fitToWindow();
+    window.addEventListener('resize', fitToWindow);
+
+    // ===== Donut =====
+    const LUM = ".,-~:;=!*#$@";
+    let A = 0, B = 0;                       // ángulos
+    const baseA = 0.007, baseB = 0.0035;    // giro suave (ajusta si quieres)
+
+    const screen = document.getElementById('screen');
+
+    function renderFrame() {
+      const z = new Float32Array(WIDTH * HEIGHT);
+      const b = new Array(WIDTH * HEIGHT).fill(' ');
+
+      for (let j = 0; j < Math.PI * 2; j += 0.07) {
+        const d = Math.cos(j), f = Math.sin(j);
+        for (let i = 0; i < Math.PI * 2; i += 0.02) {
+          const c = Math.sin(i), l = Math.cos(i);
+          const e = Math.sin(A), g = Math.cos(A);
+          const m = Math.cos(B), n = Math.sin(B);
+
+          const h = d + 2;                       // R2=2, R1=1
+          const D = 1 / (c * h * e + f * g + 5);
+          const t = c * h * g - f * e;
+
+          // Tamaño donut
+          const x = (WIDTH/2  + (WIDTH  * 0.40) * D * (l * h * m - t * n)) | 0;
+          const y = (HEIGHT/2 + (HEIGHT * 0.38) * D * (l * h * n + t * m)) | 0;
+
+          if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) continue;
+
+          const o = x + WIDTH * y;
+          const N = (8 * ((f * e - c * d * g) * m - c * d * e - f * g - l * d * n)) | 0;
+
+          if (D > z[o]) {
+            z[o] = D;
+            b[o] = LUM[Math.max(0, Math.min(LUM.length - 1, N))];
+          }
+        }
+      }
+
+      // pintar en <pre>
+      let out = "";
+      for (let r = 0; r < HEIGHT; r++) {
+        out += b.slice(r * WIDTH, (r + 1) * WIDTH).join('');
+        if (r < HEIGHT - 1) out += "\n";
+      }
+      screen.textContent = out;
+
+      // avanzar giros
+      A += baseA;
+      B += baseB;
+    }
+
+    // ===== Movimiento tipo DVD (colisión exacta) =====
+    let xPos = 40, yPos = 40; // px
+    let vX = 90, vY = 70;     // px/s
+    const margin = 0;         // borde exacto
+
+    let last = performance.now();
+    function tick(now) {
+      const dt = (now - last) / 1000; // segundos
+      last = now;
+
+      renderFrame();
+
+      const w  = screen.offsetWidth;   // ancho real del <pre> en píxeles
+      const h  = screen.offsetHeight;  // alto real del <pre> en píxeles
+      const vw = document.documentElement.clientWidth;
+      const vh = document.documentElement.clientHeight;
+
+      // límites exactos a los bordes
+      const maxX = vw - w - margin;
+      const maxY = vh - h - margin;
+
+      xPos += vX * dt;
+      yPos += vY * dt;
+
+      if (xPos <= margin) { xPos = margin; vX = Math.abs(vX); }
+      if (xPos >= maxX)   { xPos = maxX;   vX = -Math.abs(vX); }
+      if (yPos <= margin) { yPos = margin; vY = Math.abs(vY); }
+      if (yPos >= maxY)   { yPos = maxY;   vY = -Math.abs(vY); }
+
+      screen.style.transform = `translate(${xPos}px, ${yPos}px)`;
+
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  })();
+  </script>
+</body>
+</html>
