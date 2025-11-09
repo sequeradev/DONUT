@@ -12,17 +12,16 @@
       background:#0b0b0b;
       color:#00ff00; /* verde */
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      overflow:hidden;   /* sin scroll */
-      position:relative; /* referencia para translate() */
+      overflow:hidden;
+      position:relative;
     }
     #screen{
-      position:absolute;   /* mover con transform */
-      top:0; left:0;       /* origen en esquina superior izquierda */
+      position:absolute; top:0; left:0;
       white-space:pre;
       line-height:1.05;
       user-select:none;
       will-change:transform;
-      font-size: clamp(10px, 2.2vw, 18px); /* un poco más grande */
+      font-size: clamp(8px, 1.4vw, 14px); /* tamaño cómodo para Pages */
       margin:0;
     }
   </style>
@@ -32,13 +31,13 @@
 
   <script>
   (() => {
-    // ===== Dimensiones del lienzo (caracteres) =====
-    let WIDTH = 90, HEIGHT = 28;
+    // ===== Dimensiones del lienzo =====
+    let WIDTH = 84, HEIGHT = 26;
     function fitToWindow() {
-      // estimación conservadora para que quepa con el font-size de arriba
-      const cols = Math.floor(window.innerWidth  / 12);
-      const rows = Math.floor(window.innerHeight / 22);
-      WIDTH  = Math.max(70, Math.min(110, cols));
+      // heurística para que quepa en la mayoría de pantallas
+      const cols = Math.floor(window.innerWidth  / 11);
+      const rows = Math.floor(window.innerHeight / 21);
+      WIDTH  = Math.max(70, Math.min(100, cols));
       HEIGHT = Math.max(24, Math.min(34,  rows));
     }
     fitToWindow();
@@ -46,8 +45,8 @@
 
     // ===== Donut =====
     const LUM = ".,-~:;=!*#$@";
-    let A = 0, B = 0;                       // ángulos
-    const baseA = 0.007, baseB = 0.0035;    // giro suave (ajusta si quieres)
+    let A = 0, B = 0;
+    const baseA = 0.007, baseB = 0.0035; // giro suave
 
     const screen = document.getElementById('screen');
 
@@ -62,13 +61,13 @@
           const e = Math.sin(A), g = Math.cos(A);
           const m = Math.cos(B), n = Math.sin(B);
 
-          const h = d + 2;                       // R2=2, R1=1
+          const h = d + 2;
           const D = 1 / (c * h * e + f * g + 5);
           const t = c * h * g - f * e;
 
-          // Tamaño donut
-          const x = (WIDTH/2  + (WIDTH  * 0.40) * D * (l * h * m - t * n)) | 0;
-          const y = (HEIGHT/2 + (HEIGHT * 0.38) * D * (l * h * n + t * m)) | 0;
+          // tamaño ajustado para Pages (un poco menor que antes)
+          const x = (WIDTH/2  + (WIDTH  * 0.38) * D * (l * h * m - t * n)) | 0;
+          const y = (HEIGHT/2 + (HEIGHT * 0.35) * D * (l * h * n + t * m)) | 0;
 
           if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) continue;
 
@@ -82,7 +81,7 @@
         }
       }
 
-      // pintar en <pre>
+      // ¡OJO! salto de línea correcto: \n (NO \\n)
       let out = "";
       for (let r = 0; r < HEIGHT; r++) {
         out += b.slice(r * WIDTH, (r + 1) * WIDTH).join('');
@@ -90,29 +89,25 @@
       }
       screen.textContent = out;
 
-      // avanzar giros
       A += baseA;
       B += baseB;
     }
 
-    // ===== Movimiento tipo DVD (colisión exacta) =====
-    let xPos = 40, yPos = 40; // px
-    let vX = 90, vY = 70;     // px/s
-    const margin = 0;         // borde exacto
+    // ===== Movimiento tipo DVD =====
+    let xPos = 40, yPos = 40;
+    let vX = 90, vY = 70;  // px/s
+    const margin = 0;
 
     let last = performance.now();
     function tick(now) {
-      const dt = (now - last) / 1000; // segundos
-      last = now;
+      const dt = (now - last) / 1000; last = now;
 
       renderFrame();
 
-      const w  = screen.offsetWidth;   // ancho real del <pre> en píxeles
-      const h  = screen.offsetHeight;  // alto real del <pre> en píxeles
+      const w  = screen.offsetWidth;
+      const h  = screen.offsetHeight;
       const vw = document.documentElement.clientWidth;
       const vh = document.documentElement.clientHeight;
-
-      // límites exactos a los bordes
       const maxX = vw - w - margin;
       const maxY = vh - h - margin;
 
